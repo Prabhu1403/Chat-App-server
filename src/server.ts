@@ -1,3 +1,4 @@
+//this is for development
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -19,8 +20,8 @@ const allowedOrigins = ["http://localhost:3000", "http://localhost:3001"];
 
 const app = express();
 app.use(cors({
-  origin: allowedOrigins,
-  credentials: true,
+    origin: allowedOrigins,
+    credentials: true,
 }));
 
 app.use(express.json({ limit: "10mb" }));
@@ -29,15 +30,15 @@ app.use("/api", userRoute);
 app.use("/api", messageRoute);
 app.use("/api", groupRoute);
 app.use("/uplodes", express.static(path.join(__dirname, "../uplodes")));
-
 const server = http.createServer(app);
 
-export const io = new Server(server, {
+export const io = new Server(server, {  
   cors: {
     origin: allowedOrigins,
     methods: ["GET", "POST"],
   },
 });
+
 
 connect();
 
