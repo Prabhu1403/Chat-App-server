@@ -47,6 +47,10 @@ initSockets(io);
 // startJob();
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`SERVER RUNNING ON PORT ${PORT}`);
-});
+if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
+  server.listen(PORT, () => {
+    console.log(`SERVER RUNNING ON PORT ${PORT}`);
+  });
+}
+
+export default server;
