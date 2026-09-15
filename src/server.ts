@@ -30,6 +30,11 @@ app.use("/api", userRoute);
 app.use("/api", messageRoute);
 app.use("/api", groupRoute);
 app.use("/uplodes", express.static(path.join(__dirname, "../uplodes")));
+
+app.get("/", (req, res) => {
+  res.send("Chat App server is running!");
+});
+
 const server = http.createServer(app);
 
 export const io = new Server(server, {  
