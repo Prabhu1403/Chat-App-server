@@ -16,7 +16,7 @@ import "./models/index"; // Ensure all models and associations are loaded
 import { initSockets } from "./Sockets";
 // import { startJob } from "./jobs/cronJobs";
 
-const allowedOrigins = ["http://localhost:3000", "http://localhost:3001"];
+const allowedOrigins = ["http://localhost:3000", "http://localhost:3001",  process.env.FRONTEND_URL || ""].filter(Boolean);
 
 const app = express();
 app.use(cors({
