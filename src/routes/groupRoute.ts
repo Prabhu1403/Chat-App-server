@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { verifyToken } from "../middleware/authmiddleware";
-import { createGroup,getGroupMessage, getGroups, joinRequest, getOwnerJoinRequests, acceptJoinRequest, rejectJoinRequest, markMessageAsRead, getLastMessage, deleteGroup } from "../controllers/groupController";
+import { createGroup,getGroupMessage, getGroups, joinRequest, getMyGroups, getOwnerJoinRequests, acceptJoinRequest, rejectJoinRequest, markMessageAsRead, getLastMessage, deleteGroup } from "../controllers/groupController";
 import { createMesageRead, getUnreadMessage } from "../controllers/groupMessageReadcontroller";
 
 const router = Router();
@@ -9,6 +9,7 @@ const router = Router();
 router.post('/creategroup', verifyToken, createGroup)
 router.get('/getgroups', verifyToken, getGroups)
 router.post('/join-request', verifyToken, joinRequest)
+router.get('/getMyGroups/:userId', verifyToken, getMyGroups)
 
 router.get('/join-requests/:userId', verifyToken, getOwnerJoinRequests)
 router.post('/accept-requests/:id', verifyToken, acceptJoinRequest)

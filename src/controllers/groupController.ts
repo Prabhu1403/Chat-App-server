@@ -30,9 +30,11 @@ export const createGroup = async (req: Request, res: Response) => {
     }
 }
 
+
+
 export const getGroups = async (req: Request, res: Response) => {
     try {
-        const groups = await Group.findAll({ 
+        const groups = await Group.findAll({
             order: [["createdAt", "DESC"]],
             include: [{
                 model: User,
@@ -41,13 +43,35 @@ export const getGroups = async (req: Request, res: Response) => {
             }]
         });
 
-      
-        
         return res.status(200).json({ groups });
     } catch (err) {
         console.error(err);
         return res.status(500).json({ message: "Internal server error" });
     }
+}
+
+export const getMyGroups = async(req:AuthRequest,res:Response)=>{
+   try{
+     const userId = req.params.userId;
+     if(!userId){
+      return res.status(401).json({ message: "Unauthorized" });
+     }
+
+     const groupMember = await GroupMembers.findAll({where:{userId:userId}});
+     const groupIds = groupMember.map(groupMember=>groupMember.groupId);
+     const groups = await Group.findAll({
+        where:{
+            [Op.or]:[
+                {createdBy:userId},
+                ...(groupIds.length > 0 ? [{ id: groupIds }] : [])
+            ]
+           },order:[['createdAt','DESC']],include:[{model:User,as:'members',attributes:['userId']}]});
+     return res.status(200).json({groups});
+
+   }catch(err){
+    console.error(err);
+    return res.status(500).json({ message: "Internal server error" });
+   }
 }
 
 export const joinRequest = async (req: Request, res: Response) => {
@@ -62,7 +86,7 @@ export const joinRequest = async (req: Request, res: Response) => {
         switch (true) {
             case !!alreadyMember:
                 return res.status(400).json({ message: "You are already a member of this group" });
-            
+
             case !!alreadyRequested:
                 return res.status(400).json({ message: "you already send join request please wait to owner accept" });
 
@@ -101,7 +125,7 @@ export const joinRequest = async (req: Request, res: Response) => {
 export const getOwnerJoinRequests = async (req: AuthRequest, res: Response) => {
     try {
         const userId = req.params.userId;
-      
+
         if (!userId) {
             return res.status(401).json({ message: "Unauthorized" });
         }
@@ -147,13 +171,13 @@ export const getOwnerJoinRequests = async (req: AuthRequest, res: Response) => {
 export const acceptJoinRequest = async (req: AuthRequest, res: Response) => {
     try {
         const requestId = req.params.id;
-        console.log("requestId>>>",requestId);
-        
-        const request = await JoinRequest.findOne({where: {userId: requestId}});
+        console.log("requestId>>>", requestId);
+
+        const request = await JoinRequest.findOne({ where: { userId: requestId } });
         if (!request) {
             return res.status(404).json({ message: "Request not found" });
         }
-        
+
         const user = await User.findOne({ where: { userId: request.userId } });
         if (!user) {
             return res.status(404).json({ message: "User not found" });
@@ -162,7 +186,7 @@ export const acceptJoinRequest = async (req: AuthRequest, res: Response) => {
         request.status = 'accepted';
         await request.save();
 
-       const newMember = await GroupMembers.create({
+        const newMember = await GroupMembers.create({
             groupId: request.groupId,
             userId: user.userId,
             joinedAt: new Date()
@@ -170,7 +194,7 @@ export const acceptJoinRequest = async (req: AuthRequest, res: Response) => {
 
         return res.status(200).json({ message: "Request accepted successfully" });
     } catch (error) {
-         console.error(error);
+        console.error(error);
         return res.status(500).json({ message: "Internal server error" });
     }
 }
@@ -182,13 +206,13 @@ export const rejectJoinRequest = async (req: AuthRequest, res: Response) => {
         if (!request) {
             return res.status(404).json({ message: "Request not found" });
         }
-        
+
         request.status = 'rejected';
         await request.save();
-        
+
         return res.status(200).json({ message: "Request rejected successfully" });
     } catch (error) {
-         console.error(error);
+        console.error(error);
         return res.status(500).json({ message: "Internal server error" });
     }
 }
@@ -197,80 +221,80 @@ export const getGroupMessage = async (req: AuthRequest, res: Response) => {
     try {
         const groupId = req.query.groupId;
         const userId = req.query.userId;
-        console.log("groupId>>>",groupId);
-        console.log("userId>>>",userId);
-        
+        console.log("groupId>>>", groupId);
+        console.log("userId>>>", userId);
+
         let unreadCount = 0;
-        if(!groupId){
+        if (!groupId) {
             return res.status(401).json({ message: "groupid not found" });
         }
 
-        
+
         const groupMessage = await GroupMessage.findAll({ where: { groupId }, order: [["createdAt", "DESC"]] });
-        
+
         // Count unread messages that are NOT sent by the current user
         unreadCount = groupMessage.filter((msg: any) => msg.senderId !== userId && msg.isRead === false).length;
         console.log("unreadCount>>>", unreadCount);
-        
+
         return res.status(200).json({ groupMessage, unreadCount });
     } catch (error) {
-         console.error(error);
+        console.error(error);
         return res.status(500).json({ message: "Internal server error" });
     }
 }
 
-export const getLastMessage = async(req: AuthRequest, res: Response)=>{
+export const getLastMessage = async (req: AuthRequest, res: Response) => {
     try {
         const groupId = Number(req.params.groupId);
         const userId = req.user?.userId || req.user?.id;
-        if(!groupId){
+        if (!groupId) {
             return res.status(401).json({ message: "groupid not found" });
         }
-       
-        
-        const message = await GroupMessage.findOne({where: {groupId}, order: [["createdAt", "DESC"]]});
-       
+
+
+        const message = await GroupMessage.findOne({ where: { groupId }, order: [["createdAt", "DESC"]] });
+
         const lastMessage = message?.dataValues;
-      
-        return res.status(200).json({lastMessage});
-        
+
+        return res.status(200).json({ lastMessage });
+
     } catch (error) {
-         console.error(error);
+        console.error(error);
         return res.status(500).json({ message: "Internal server error" });
     }
 }
 
 
-export const markMessageAsRead =async(req:AuthRequest, res:Response)=>{
-   try{
-     const groupId = req.params.groupId;
-     if(!groupId){
-      return  res.status(401).json({message:"groupID not found"})
+export const markMessageAsRead = async (req: AuthRequest, res: Response) => {
+    try {
+        const groupId = req.params.groupId;
+        if (!groupId) {
+            return res.status(401).json({ message: "groupID not found" })
 
-     }
+        }
 
-     await GroupMessage.update(
-      {isRead: true},
-      {where: {groupId, isRead: false,}}
-     )
-    return res.status(200).json({message:"Messages marked as read successfully"})
-     
-   }catch(error){
-     console.error("Error marking messages as read:", error);
-     return res.status(500).json({ message: "Failed to mark messages as read" });
-   } 
+        await GroupMessage.update(
+            { isRead: true },
+            { where: { groupId, isRead: false, } }
+        )
+        return res.status(200).json({ message: "Messages marked as read successfully" })
+
+    } catch (error) {
+        console.error("Error marking messages as read:", error);
+        return res.status(500).json({ message: "Failed to mark messages as read" });
+    }
 }
 
 export const deleteGroup = async (req: AuthRequest, res: Response) => {
     try {
         const groupId = req.params.id as string;
         const userId = req.user?.userId || req.user?.id;
-        
+
         const group = await Group.findByPk(groupId);
         if (!group) {
             return res.status(404).json({ message: "Group not found" });
         }
-        
+
         if (group.createdBy !== userId) {
             return res.status(403).json({ message: "Only the group creator can delete this group" });
         }
@@ -282,7 +306,7 @@ export const deleteGroup = async (req: AuthRequest, res: Response) => {
 
         return res.status(200).json({ message: "Group deleted successfully" });
     } catch (error) {
-         console.error(error);
+        console.error(error);
         return res.status(500).json({ message: "Internal server error" });
     }
 }

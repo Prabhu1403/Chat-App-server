@@ -86,7 +86,7 @@ export function registerUserHandlers(io: Server, socket: Socket) {
           console.log(`User ${userId} disconnected and removed from online list`);
           const lastSeenTime = new Date().toLocaleString();
           User.update(
-            { isOnline: false,lastseen:lastSeenTime },
+            { isOnline: false, lastSeen: lastSeenTime },
 
             { where: { userId: userId } }
           );
